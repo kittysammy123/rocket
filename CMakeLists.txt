@@ -21,11 +21,11 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib)
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
 
-#add_library(log  ${SRC_LOG_FILE})
-#target_include_directories(log PUBLIC ${CMAKE_SOURCE_DIR}/include)
-add_executable(log  ${SRC_LOG_FILE})
+add_library(log  ${SRC_LOG_FILE})
+target_include_directories(log PUBLIC ${CMAKE_SOURCE_DIR}/include)
+# add_executable(log  ${SRC_LOG_FILE})
 
-# add_subdirectory(test)
+add_subdirectory(test)
 
 
 

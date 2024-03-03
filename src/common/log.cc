@@ -10,10 +10,10 @@ namespace rocket {
 
     Logger* Logger::GetGlobalLogger() {
         if(!g_logger) {
-            return g_logger;
+            g_logger = new Logger(LogLevel::UNKNOWN);
         }
 
-        return new Logger(LogLevel::UNKNOWN);
+        return g_logger;
     }
 
 
@@ -73,9 +73,9 @@ namespace rocket {
 }
 
 
-int main() {
-        auto str2 = (new rocket::LogEvent(rocket::LogLevel::Debug))->toString();
-        std::string event_str = str2 + rocket::formatString("test log %s","11");
-        rocket::Logger::GetGlobalLogger()->pushLog(event_str); 
-        rocket::Logger::GetGlobalLogger()->log();
-}
+// int main() {
+//         auto str2 = (new rocket::LogEvent(rocket::LogLevel::Debug))->toString();
+//         std::string event_str = str2 + rocket::formatString("test log %s","11");
+//         rocket::Logger::GetGlobalLogger()->pushLog(event_str); 
+//         rocket::Logger::GetGlobalLogger()->log();
+// }
