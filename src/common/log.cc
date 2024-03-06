@@ -3,16 +3,45 @@
 #include <iostream>
 #include "common/log.h"
 #include "common/util.h"
+#include "common/config.h"
 
 namespace rocket {
 
     static Logger* g_logger = nullptr;
 
-    Logger* Logger::GetGlobalLogger() {
-        if(!g_logger) {
-            g_logger = new Logger(LogLevel::UNKNOWN);
-        }
 
+    std::string LogLevelToString(LogLevel level) {
+        switch(level) {
+        case LogLevel::Debug:
+            return "DEBUG";
+        case LogLevel::Info:
+            return "INFO";
+        case LogLevel::Error:
+            return "ERROR";
+        default:
+            return "UNKNOWN";
+        }
+    }
+
+    LogLevel StringToLogLevel(const std::string& log_level_string) {
+        if(log_level_string == "DEBUG") {
+            return LogLevel::Debug;
+        } else if(log_level_string == "INFO") {
+            return LogLevel::Info;
+        }else if(log_level_string == "ERROR") {
+            return LogLevel::Error;
+        }else{
+            return LogLevel::Unknown;
+        }
+    }
+    
+    Logger* Logger::GetGlobalLogger() {
+        if(g_logger) {
+            return g_logger;
+        }
+        std::string g_log_level_str = Config::GetGlobalConfig()->getLogLevel();
+        LogLevel  g_log_level = StringToLogLevel(g_log_level_str);
+        g_logger = new Logger(g_log_level);
         return g_logger;
     }
 
@@ -26,19 +55,6 @@ namespace rocket {
             auto str = m_queue.front();
             m_queue.pop();
             std::cout << str << std::endl;
-        }
-    }
-
-    std::string LogLevelToString(LogLevel level) {
-        switch(level) {
-        case LogLevel::Debug:
-            return "DEBUG";
-        case LogLevel::Info:
-            return "INFO";
-        case LogLevel::Error:
-            return "ERROR";
-        default:
-            return "UNKNOWN";
         }
     }
 
@@ -71,11 +87,3 @@ namespace rocket {
         return ss.str();
     }
 }
-
-
-// int main() {
-//         auto str2 = (new rocket::LogEvent(rocket::LogLevel::Debug))->toString();
-//         std::string event_str = str2 + rocket::formatString("test log %s","11");
-//         rocket::Logger::GetGlobalLogger()->pushLog(event_str); 
-//         rocket::Logger::GetGlobalLogger()->log();
-// }
