@@ -36,24 +36,31 @@ namespace rocket {
     }
     
     Logger* Logger::GetGlobalLogger() {
-        if(g_logger) {
-            return g_logger;
-        }
-        std::string g_log_level_str = Config::GetGlobalConfig()->getLogLevel();
-        LogLevel  g_log_level = StringToLogLevel(g_log_level_str);
-        g_logger = new Logger(g_log_level);
         return g_logger;
     }
 
+    void Logger::InitGlobalLogger() {
+        std::string g_log_level_str = Config::GetGlobalConfig()->getLogLevel();
+        LogLevel  g_log_level = StringToLogLevel(g_log_level_str);
+        g_logger = new Logger(g_log_level);
+    }
 
     void Logger::pushLog(std::string& str) {
+        ScopeMutex<Mutex> lock(m_mutex);
         m_queue.push(str);
     }
 
     void Logger::log() {
-        while(!m_queue.empty()) {
-            auto str = m_queue.front();
-            m_queue.pop();
+        //先取出来
+        
+        ScopeMutex<Mutex> lock(m_mutex);
+        std::queue<std::string> tmp;
+        m_queue.swap(tmp);
+        lock.unlock();
+        
+        while(!tmp.empty()) {
+            auto str = tmp.front();
+            tmp.pop();
             std::cout << str << std::endl;
         }
     }

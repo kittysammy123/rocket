@@ -3,14 +3,30 @@
 
 #include <string>
 #include <queue>
+#include "common/mutex.h"
+
 
 
 #define DEBUGLOG(str,...) \
-    std::string event_str = (new rocket::LogEvent(rocket::LogLevel::Debug))->toString() + rocket::formatString(str,##__VA_ARGS__);\
-    rocket::Logger::GetGlobalLogger()->pushLog(event_str); \
-    rocket::Logger::GetGlobalLogger()->log(); \
+    if(rocket::Logger::GetGlobalLogger()->getLevel() <= rocket::LogLevel::Debug) { \
+        std::string event_str = (new rocket::LogEvent(rocket::LogLevel::Debug))->toString() + rocket::formatString(str,##__VA_ARGS__);\
+        rocket::Logger::GetGlobalLogger()->pushLog(event_str); \
+        rocket::Logger::GetGlobalLogger()->log(); \
+    } \
 
+#define INFOLOG(str,...) \
+    if(rocket::Logger::GetGlobalLogger()->getLevel() <= rocket::LogLevel::Info) { \
+        std::string event_str = (new rocket::LogEvent(rocket::LogLevel::Info))->toString() + rocket::formatString(str,##__VA_ARGS__);\
+        rocket::Logger::GetGlobalLogger()->pushLog(event_str); \
+        rocket::Logger::GetGlobalLogger()->log(); \
+    } \
 
+#define ERRORLOG(str,...) \
+    if(rocket::Logger::GetGlobalLogger()->getLevel() <= rocket::LogLevel::Error) { \
+        std::string event_str = (new rocket::LogEvent(rocket::LogLevel::Error))->toString() + rocket::formatString(str,##__VA_ARGS__);\
+        rocket::Logger::GetGlobalLogger()->pushLog(event_str); \
+        rocket::Logger::GetGlobalLogger()->log(); \
+    } \
 
 namespace rocket {
 
@@ -67,10 +83,16 @@ namespace rocket {
         void log();
 
         static Logger* GetGlobalLogger();
+        static void InitGlobalLogger();
+
+        LogLevel getLevel(){
+            return m_set_level;
+        }
     private:
         LogLevel m_set_level;
 
         std::queue<std::string> m_queue;
+        Mutex   m_mutex;
     };
 }
 

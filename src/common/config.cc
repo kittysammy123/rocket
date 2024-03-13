@@ -24,17 +24,24 @@ namespace rocket {
             exit(0);
         }
 
-        // tinyxml2::XMLText* logLevelNode = doc.RootElement()->FirstChildElement( "log")->FirstChildElement("level")->ToText();
-        // if(nullptr != logLevelNode) {
-        //     m_log_level = logLevelNode->Value();
-        // }
+        auto root = doc.RootElement();
+        if(!root) {
+            printf("get xml root element failed\n");
+            return;
+        }
 
-        // auto root = doc.RootElement();
+        auto log = root->FirstChildElement("log");
+        if(!log) {
+            printf("get xml log element failed\n");
+            return;
+        }
 
-        // auto log = root->FirstChildElement("log");
+        auto level = log->FirstChildElement("level");
+        if(!level) {
+            printf("get xml log_level failed\n");
+            return;
+        }
 
-        // auto level = log->FirstChildElement("level");
-
-        // m_log_level = level->GetText();
+        m_log_level = level->GetText();
     }
 }
