@@ -18,11 +18,19 @@ namespace rocket {
         void wakeUp();
 
         void stop();
+
+        //带weak_up是为了紧急的task需要尽快执行
+        void addTask(std::function<void()> task,bool is_weak_up = false);
     
+        void addEpollEvent(FdEvent* event);
+
+        void deleteEpollEvent(FdEvent* event);
     private:
         void dealWeakUp();
+
+        bool isInLoopThread();
     private:
-        pid_t m_pid{0};
+        pid_t m_thread_id{0};
 
         int m_epoll_fd {0};
 

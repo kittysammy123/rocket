@@ -17,7 +17,7 @@ namespace rocket {
 
         ~FdEvent();
 
-        void handler(EventType type);
+        std::function<void()> getHandler(EventType type);
 
         void listen(EventType type,std::function<void()> callback);
 

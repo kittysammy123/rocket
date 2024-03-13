@@ -4,6 +4,7 @@
 #include "net/eventloop.h"
 #include "common/util.h"
 #include "common/log.h"
+#include "net/fd_event.h"
 
 namespace rocket {
 
@@ -18,7 +19,7 @@ namespace rocket {
             exit(EXIT_FAILURE);
         }
 
-        m_pid = getThreadId();
+        m_thread_id = getThreadId();
         
 
         m_epoll_fd = epoll_create(1);
@@ -43,13 +44,88 @@ namespace rocket {
             exit(EXIT_FAILURE);
         }
 
-        INFOLOG("success create event loop in thread %d",m_pid);
+        INFOLOG("success create event loop in thread %d",m_thread_id);
         
         t_current_eventloop = this;
     }
 
     EventLoop::~EventLoop() {
 
+    }
+
+    bool EventLoop::isInLoopThread() {
+        return getThreadId() == m_thread_id;
+    }
+
+    void EventLoop::addEpollEvent(FdEvent* event) {
+        if(isInLoopThread()) {
+            
+            int op = EPOLL_CTL_ADD;
+            auto fd_event = event->getEpollEvent();
+            int fd = event->getFd();
+            //判断是否在监听队列里面
+            auto it = m_listen_fds.find(fd);
+            if(it != m_listen_fds.end()) {
+                op = EPOLL_CTL_MOD;
+            }
+
+            int ret = epoll_ctl(m_epoll_fd,op,fd,&fd_event);
+            if(ret == -1) {
+                ERRORLOG("epoll_ctl fd=%d op=%d failed:%s.",fd,op,strerror(errno));
+                return;
+            }
+
+            INFOLOG("epoll_ctl add fd=%d op=%d success.",fd,op);
+        }
+        else
+        {
+            //添加任务
+            auto cb = [this,event]() {
+                this->addEpollEvent(event);
+            };
+            addTask(cb,true);
+        }
+
+    }
+
+    void EventLoop::deleteEpollEvent(FdEvent* event) {
+        if(isInLoopThread()) {
+            int fd = event->getFd();
+
+            auto it = m_listen_fds.find(fd);
+            if(it == m_listen_fds.end()) {
+                return;
+            }
+
+            int op = EPOLL_CTL_DEL;
+            auto fd_event = event->getEpollEvent();
+            
+            int ret = epoll_ctl(m_epoll_fd,op,fd,&fd_event);
+            if(ret == -1) {
+                ERRORLOG("epoll_ctl fd=%d op=%d failed:%s.",fd,op,strerror(errno));
+                return;
+            }
+            INFOLOG("epoll_ctl add fd=%d op=%d success.",fd,op);
+        }
+        else
+        {
+            //添加任务
+            auto cb = [this,event]() {
+                this->deleteEpollEvent(event);
+            };
+            addTask(cb,true);
+        }
+    }
+
+    void EventLoop::addTask(std::function<void()> task,bool is_weak_up) {
+        {
+            ScopeMutex<Mutex> lock(m_mutex);
+            m_pending_tasks.push(task);
+        }
+
+        if(is_weak_up) {
+            wakeUp();
+        }
     }
 
     void EventLoop::loop() {
@@ -72,6 +148,28 @@ namespace rocket {
 
             int rt = epoll_wait(m_epoll_fd,events,g_epoll_max_events,timeout);
 
+            if(rt < 0) {
+                ERRORLOG("epoll_wait error:%s",strerror(errno));
+            }
+            else
+            {
+                for(int i = 0; i < rt; i++) {
+                    auto trigger_event = events[i];
+                    //获取到对应的FdEvent
+                    auto fd_event_ptr = static_cast<FdEvent*>(trigger_event.data.ptr);
+                    if(fd_event_ptr == nullptr) {
+                        continue;
+                    }
+                    //可读事件，则添加可读任务回调
+                    if(trigger_event.events | EPOLLIN) {
+                        addTask(fd_event_ptr->getHandler(FdEvent::EventType::IN_EVENT));
+                    }
+
+                    if(trigger_event.events | EPOLLOUT) {
+                        addTask(fd_event_ptr->getHandler(FdEvent::EventType::OUT_EVENT));
+                    }
+                }
+            }
         }
     }
 
