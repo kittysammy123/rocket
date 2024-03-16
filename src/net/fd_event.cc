@@ -3,7 +3,7 @@
 
 namespace rocket {
     FdEvent::FdEvent(int fd) {
-        m_event.data.fd = fd;
+        m_fd = fd;
     }
 
     FdEvent::~FdEvent() {
@@ -18,7 +18,10 @@ namespace rocket {
         case EventType::OUT_EVENT:
             return m_write_callback;
         default:
-        };
+            return []() {
+                return;
+            };
+        }
 
     }
 
@@ -34,6 +37,7 @@ namespace rocket {
             m_event.events |= EPOLLOUT;
             break;
         default:
+            break;
         }
         m_event.data.ptr = this;
     }

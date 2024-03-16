@@ -1,6 +1,5 @@
 #include <pthread.h>
 #include <unistd.h>
-#include <unistd.h>
 #include "common/log.h"
 #include "common/config.h"
 

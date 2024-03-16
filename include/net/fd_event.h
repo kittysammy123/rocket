@@ -22,13 +22,14 @@ namespace rocket {
         void listen(EventType type,std::function<void()> callback);
 
         int getFd() {
-            return m_event.data.fd;
+            return m_fd;
         }
 
         epoll_event getEpollEvent() {
             return m_event;
         }
     private:
+        int m_fd;
         epoll_event m_event;
 
         std::function<void()> m_read_callback;

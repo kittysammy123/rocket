@@ -89,7 +89,7 @@ namespace rocket {
         ss  << "["  <<  LogLevelToString(m_level) << "]\t"
             << "["  <<  time_str << "]\t"
             << "["  << m_pid << ":" << m_thread_id << "]\t"
-            << "["  <<  __FILE__ << ":" << __LINE__ << "]\t";
+            << "["  <<  m_file_name << ":" << m_line << "]\t";
 
         return ss.str();
     }

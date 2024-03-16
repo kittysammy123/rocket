@@ -7,8 +7,9 @@ set(CMAKE_CXX_STANDARD 17)
 
 set(CMAKE_BUILD_TYPE Debug)
 
-set(SRC_COMMON_DIR ${CMAKE_SOURCE_DIR}/src/common)
-set(SRC_LOG_FILE ${SRC_COMMON_DIR}/log.cc ${SRC_COMMON_DIR}/util.cc ${SRC_COMMON_DIR}/config.cc)
+set(SRC_DIR ${CMAKE_SOURCE_DIR}/src)
+file(GLOB_RECURSE SRC_FILES "${SRC_DIR}/*.cc")
+
 
 #设置可执行文件输出路径
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
@@ -21,12 +22,9 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib)
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
 
-add_library(log  ${SRC_LOG_FILE})
+add_library(log  ${SRC_FILES})
 target_link_libraries(log PUBLIC tinyxml2)
-target_include_directories(log PUBLIC ${CMAKE_SOURCE_DIR}/include)
+#target_include_directories(log PUBLIC ${CMAKE_SOURCE_DIR}/include)
 # add_executable(log  ${SRC_LOG_FILE})
 
 add_subdirectory(test)
-
-
-

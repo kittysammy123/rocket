@@ -4,10 +4,16 @@
 #include <pthread.h>
 #include <set>
 #include <queue>
+#include <memory>
 #include <functional>
 #include "common/mutex.h"
 
 namespace rocket {
+    //前项申明
+    class FdEvent;
+    class WeakUpFdEvent;
+
+
     class EventLoop {
     public:
         EventLoop();
@@ -27,6 +33,7 @@ namespace rocket {
         void deleteEpollEvent(FdEvent* event);
     private:
         void dealWeakUp();
+        void initWeakUpFdEvent();
 
         bool isInLoopThread();
     private:
@@ -34,7 +41,9 @@ namespace rocket {
 
         int m_epoll_fd {0};
 
-        int m_weakup_fd {0};
+        //int m_weakup_fd {0};
+
+        std::shared_ptr<WeakUpFdEvent> m_weakup_fd_event;
 
         bool m_stop_flag {false};
 

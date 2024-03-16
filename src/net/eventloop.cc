@@ -1,10 +1,12 @@
 #include <sys/epoll.h>
 #include <sys/eventfd.h>
 #include <string.h>
+#include <unistd.h>
 #include "net/eventloop.h"
 #include "common/util.h"
 #include "common/log.h"
 #include "net/fd_event.h"
+#include "net/weakup_fd_event.h"
 
 namespace rocket {
 
@@ -28,21 +30,7 @@ namespace rocket {
             exit(EXIT_FAILURE);
         }
 
-        m_weakup_fd = eventfd(0,EFD_NONBLOCK);
-        if(m_weakup_fd == -1) {
-            ERRORLOG("create eventfd failed:%s",strerror(errno));
-            exit(EXIT_FAILURE);
-        }
-
-        //注册weakup_fd的可读事件
-        epoll_event event;
-        event.events = EPOLLIN;
-
-        int rt = epoll_ctl(m_epoll_fd,EPOLL_CTL_ADD,m_weakup_fd,&event);
-        if(rt == -1) {
-            ERRORLOG("epoll_ctl add weakup_fd failed:%s",strerror(errno));
-            exit(EXIT_FAILURE);
-        }
+        initWeakUpFdEvent();
 
         INFOLOG("success create event loop in thread %d",m_thread_id);
         
@@ -50,7 +38,18 @@ namespace rocket {
     }
 
     EventLoop::~EventLoop() {
+        close(m_weakup_fd_event->getFd());
+    }
 
+    void EventLoop::initWeakUpFdEvent() {
+        auto weakup_fd = eventfd(0,EFD_NONBLOCK);
+        if(weakup_fd == -1) {
+            ERRORLOG("create eventfd failed:%s",strerror(errno));
+            exit(EXIT_FAILURE);
+        }
+        m_weakup_fd_event = std::make_shared<WeakUpFdEvent>(weakup_fd);
+
+        addEpollEvent(m_weakup_fd_event.get());
     }
 
     bool EventLoop::isInLoopThread() {
@@ -139,8 +138,11 @@ namespace rocket {
             }
 
             while(!tmp_tasks.empty()) {
-                tmp_tasks.front()();
+                auto cb = tmp_tasks.front();
                 tmp_tasks.pop();
+                if(cb) {
+                    cb();
+                }
             }
 
             epoll_event events[g_epoll_max_events];
@@ -161,11 +163,11 @@ namespace rocket {
                         continue;
                     }
                     //可读事件，则添加可读任务回调
-                    if(trigger_event.events | EPOLLIN) {
+                    if(trigger_event.events & EPOLLIN) {
                         addTask(fd_event_ptr->getHandler(FdEvent::EventType::IN_EVENT));
                     }
 
-                    if(trigger_event.events | EPOLLOUT) {
+                    if(trigger_event.events & EPOLLOUT) {
                         addTask(fd_event_ptr->getHandler(FdEvent::EventType::OUT_EVENT));
                     }
                 }
