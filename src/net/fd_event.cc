@@ -6,10 +6,17 @@ namespace rocket {
         m_fd = fd;
     }
 
+    FdEvent::FdEvent() {
+
+    }
+
     FdEvent::~FdEvent() {
 
     }
 
+    void FdEvent::setFd(int fd) {
+        m_fd = fd;
+    }
     std::function<void()> FdEvent::getHandler(EventType type) {
         
         switch(type) {
@@ -18,9 +25,7 @@ namespace rocket {
         case EventType::OUT_EVENT:
             return m_write_callback;
         default:
-            return []() {
-                return;
-            };
+            return nullptr;
         }
 
     }

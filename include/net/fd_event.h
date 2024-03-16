@@ -14,6 +14,8 @@ namespace rocket {
         };
 
         FdEvent(int fd);
+        
+        FdEvent();
 
         ~FdEvent();
 
@@ -24,6 +26,8 @@ namespace rocket {
         int getFd() {
             return m_fd;
         }
+
+        void setFd(int fd);
 
         epoll_event getEpollEvent() {
             return m_event;
